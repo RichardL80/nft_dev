@@ -1,0 +1,74 @@
+# Name of our overall Action
+name: Deploy to GutHub Pages
+
+# on defines WHEN the Action should run
+# In this case, it runs on pushes to the main branch and when manually triggered
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        
+
+# permissions grant our image runner the ability read/write to the repository
+# This is important for the gh-pages action to work properly
+permissions:
+    contents: read
+    pages: write
+    id-token: write
+
+# 2 commits made to main, this will cancel the first, and only run the second
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+# jobs defines WHAT action(s) will run
+jobs:
+    # buikd is the name of the job, this can be whatever you want
+    build:
+        # each job is run on an image
+        runs-on: ubuntu-22.04
+        steps:
+            # Checkout the repository
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v2
+              with:
+                version: 8 # Specify the version of pnpm to install
+                install: false # Don't install pnpm globally, we will use the one in the action
+
+            # Set up Node.js environment
+            - name: Set up Node.js
+              uses: actions/setup-node@v4
+              with:
+                node-version: '18'
+
+            # Install dependencies and build the project
+            - name: Install dependencies and build
+              run: pnpm install
+              
+            - name: Build application
+              run: pnpm build
+
+            - name: Upload build artifact
+              uses: actions/upload-page-artifact@v3
+              with: 
+                path: ./dist  # Adjust this path if your build output is in a different directory
+    deploy:
+      environment:
+        name: github-pages
+        url: ${{ steps.deployment.outputs.page_url }}
+      needs: build
+      runs-on: ubuntu-22.04
+      steps:
+        - name: Deploy to GutHub Pages
+          id: deployment
+          uses: actions/deploy-pages@v4
+
+            # Deploy to GitHub Pages
+            # - name: Deploy to GitHub Pages
+            #   uses: peaceiris/actions-gh-pages@v3
+            #   with:
+            #     github_token: ${{ secrets.GITHUB_TOKEN }}
+            #     publish_dir: ./dist  # Adjust this path if your build output is in a different directory
+            #     publish_branch: gh-pages  # The branch to publish to
