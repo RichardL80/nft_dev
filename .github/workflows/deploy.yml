@@ -51,7 +51,7 @@ jobs:
               run: pnpm build
 
             - name: Upload build artifact
-              uses: actions/upload-page-artifact@v3
+              uses: actions/upload-pages-artifact@v3
               with: 
                 path: ./dist  # Adjust this path if your build output is in a different directory
     deploy:
